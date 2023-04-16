@@ -1,0 +1,21 @@
+
+# channels are seasoned by year
+channels:
+  - name: 'Millenial Farmer'
+    url: 'https://youtube.com'
+    file_format: 'blah'
+    remove_videos_older_than_days: 60
+  - name: 'Oliver Gomis'
+    url: 'https://youtube.com'
+  - name: 'Stewart Batty Collection'
+    url:
+      - 'https://youtube.com'
+      - 'https://youtube.com'
+# playlists are seasoned by the order provided: first is Season 1, second is Season 2
+playlists:
+  - name: 'Outdoor Boys'
+    playlists:
+      - name: 'Nerf Wars'
+        url: 'https://www.youtube.com/watch?v=138djJZRkdY&list=PL5EGD6MqjI6JK4QkRGnM6yRlCC9ZNp3BX'
+      - name: 'Knot Videos'
+        url: 'https://www.youtube.com/playlist?list=PL5EGD6MqjI6IZorbsisodOyfY9qg9jV_y'
