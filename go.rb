@@ -111,22 +111,46 @@ def build_command_line_yt(source_path, url)
 	# -o %(uploader)s/%(playlist)s/%(playlist_index)s_%(title)s.%(ext)s
 end
 
-
+def find_provider(name, providers_config)
+	providers_config.each do |p|
+		return p if p['name'] == name
+	end
+end
 
 # ******
 # GO GO
 # ******
 
-system('brew upgrade yt-dlp')
+# system('brew upgrade yt-dlp')
 
-config = YAML.load_file(ARGV[0])
+config = YAML.load_file('config.yml')
 
-config['playlists'].each do |playlist|
-  playlist['playlists'].each_with_index do |inner_playlist, index|
-    index += 1
-    index_str = index.to_s.rjust(2, '0')
+# config['playlists'].each do |playlist|
+#   playlist['playlists'].each_with_index do |inner_playlist, index|
+#     index += 1
+#     index_str = index.to_s.rjust(2, '0')
 
-    playlists_under_source(playlist['name'], inner_playlist['name'], index_str)
-  end
+#     playlists_under_source(playlist['name'], inner_playlist['name'], index_str)
+#   end
+# end
+
+# loop over destinations
+# loop over providers
+config['destinations'].each do |d|
+	
+	d['providers'].each do |p|
+		provider_defaults = {}
+		provider_defaults['location'] = d['location']
+		provider_defaults.merge!(find_provider(p['name'], config['providers_config']))
+		puts "#{p['name']} defaults: #{provider_defaults}"
+
+		p['shows'].each do |show|
+			show['sources'].each do |source|
+				source_details = provider_defaults.merge(source)
+				source_details['show_name'] = show['show_name']
+				puts "#{source_details['show_name']} : #{source_details}"
+		end
+		end
+	end
 end
 
