@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'date'
 require 'filesize'
 require 'fileutils'
 require 'json'
@@ -10,9 +11,20 @@ require 'securerandom'
 require 'shellwords'
 require 'yaml'
 
-# require "./source.rb"
 
-$nas_directory = '/Volumes/storage/videos/youtube'
+def format_index_as_season_number(index)
+	index += 1
+  index.to_s.rjust(2, '0')
+end
+
+def format_dateafter(var)
+	retVal = if var == 'all'
+		""
+	elsif var.is_a?(Integer)
+		"--dateafter #{(Date.today - var).strftime("%Y%m%d")}"
+	end
+	return retVal
+end
 
 # `delete_old_files('/path/to/folder', 7)` to delete all files in `/path/to/folder` (including subfolders) that are older than 7 days, and any resulting empty subfolders.
 def delete_old_files(path, max_age_days)
@@ -53,20 +65,31 @@ end
 # This video path could work for a channel:
 # https://github.com/JordyAlkema/Youtube-DL-Agent.bundle/issues/24
 
-def source_by_year
+def source_seasoned_by_year(deets)
+	deets['dateafter'] = format_dateafter(deets['daysToGetAndKeep'])
+	deets['options'] = "--playlist-reverse"
+	deets['path'] = File.join(deets['location'], deets['show_name'])
+	deets['full_path'] = File.join(deets['path'], "Season %(upload_date>%Y)s", "S%(upload_date>%Y)sE%(playlist_autonumber)s %(title)s.%(ext)s")
+	build_yt_dlp_cmd(deets, path, full_path)
+end
 
+def sources_seasoned_by_name(deets)
+	deets['dateafter'] = format_dateafter(deets['daysToGetAndKeep'])
+	deets['path'] = File.join(deets['location'], deets['show_name'], "Season #{deets['season_index']} - #{deets['season_name']}")
+	deets['full_path'] = File.join(deets['path'], "S#{deets['season_index']}E%(playlist_autonumber)s %(title)s.%(ext)s")
+	build_yt_dlp_cmd(deets)
 end
 
 # Relies on playlist_index. Youtube should support.
-def playlists_under_source(channel_name, playlist_name, season_no)
-	path = File.join($nas_directory, "#{channel_name} [%(channel_id)s]", "Season #{season_no} #{playlist_name}", "S#{season_no}E%(playlist_index)s %(title)s [%(id)s].%(ext)s")
+# def playlists_under_source(location, channel_name, playlist_name, season_no)
+# 	path = File.join(location, "#{channel_name} [%(channel_id)s]", "Season #{season_no} #{playlist_name}", "S#{season_no}E%(playlist_index)s %(title)s [%(id)s].%(ext)s")
 
-	puts path
+# 	puts path
 
-	return path
-end
+# 	return path
+# end
 
-def build_command_line_yt(source_path, url)
+def build_yt_dlp_cmd(deets)
 
 	# youtube-dl working cmd line
 	# cmd = "youtube-dl -o '#{vd}' -f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/best' -i --verbose --download-archive downloaded.txt --merge-output-format mkv --add-metadata --embed-thumbnail '#{url}'"
@@ -75,18 +98,23 @@ def build_command_line_yt(source_path, url)
 	# cmd = "yt-dlp -o '#{vd}' -f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/best' --merge-output-format mkv --remux-video mkv --add-metadata --write-info-json --write-thumbnail --no-config --sponsorblock-remove all --restrict-filename '#{url}'"
 
 
+			
+
 	cmd = """
 		yt-dlp
-		-o '#{source_path}'
+		-o '#{deets['full_path']}'
+		--download-archive '#{File.join(deets['path'], 'downloaded.txt')}'
+		#{deets['dateafter']}
+		#{deets['options']}
 		-f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4'
 		--merge-output-format mkv --remux-video mkv
 		--add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg
 		--no-config --sponsorblock-remove all --restrict-filename
-		'#{url}'
+		'#{deets['url']}'
 	""".gsub!(/\n/, ' ')
 
 	puts cmd
-	return cmd
+	system cmd
 
 
 	# cmd = [
@@ -111,9 +139,9 @@ def build_command_line_yt(source_path, url)
 	# -o %(uploader)s/%(playlist)s/%(playlist_index)s_%(title)s.%(ext)s
 end
 
-def find_provider(name, providers_config)
+def find_provider(provider_name, providers_config)
 	providers_config.each do |p|
-		return p if p['name'] == name
+		return p if p['provider_name'] == provider_name
 	end
 end
 
@@ -141,15 +169,30 @@ config['destinations'].each do |d|
 	d['providers'].each do |p|
 		provider_defaults = {}
 		provider_defaults['location'] = d['location']
-		provider_defaults.merge!(find_provider(p['name'], config['providers_config']))
-		puts "#{p['name']} defaults: #{provider_defaults}"
+		provider_defaults.merge!(find_provider(p['provider_name'], config['providers_config']))
+		puts "#{p['provider_name']} defaults: #{provider_defaults}"
 
 		p['shows'].each do |show|
-			show['sources'].each do |source|
-				source_details = provider_defaults.merge(source)
+			# source_seasoned_by_year
+			if show['source_seasoned_by_year']
+				source_details = provider_defaults.merge(show['source_seasoned_by_year'])
 				source_details['show_name'] = show['show_name']
 				puts "#{source_details['show_name']} : #{source_details}"
-		end
+				puts source_seasoned_by_year(source_details)
+				puts " "
+			end
+
+			# sources_seasoned_by_name
+			if show['sources_seasoned_by_name']
+				show['sources_seasoned_by_name'].each_with_index do |source, i|
+					source_details = provider_defaults.merge(source)
+					source_details['show_name'] = show['show_name']
+					source_details['season_index'] = format_index_as_season_number(i)
+					puts "#{source_details['show_name']} : #{source_details}"
+					puts sources_seasoned_by_name(source_details)
+					puts " "
+				end
+			end
 		end
 	end
 end
