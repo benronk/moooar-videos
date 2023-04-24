@@ -42,22 +42,27 @@ end
 # update the file with the current timestamp and return true.
 # check_time(7, "/path/to/timestamp.txt")
 
-def check_time(days, file_path)
-  if File.exist?(file_path)
-    timestamp = File.read(file_path).to_i
-  else
-    timestamp = Time.now.to_i
-    File.write(file_path, timestamp)
-    return true
-  end
+def time_for_getting_show?(days, file_path)
+	file_path = File.join(file_path, "timestamp.txt")
 
-  current_time = Time.now.to_i
-  if current_time >= timestamp + (days * 86400)
-    File.write(file_path, current_time)
-    return true
-  else
-    return false
+	if !File.exist?(file_path)
+		return true
+	else 
+		timestamp = File.read(file_path).to_i
+		current_time = Time.now.to_i
+		if current_time >= timestamp + (days * 86400)
+	    return true
+	  else 
+	  	return false
+	  end
   end
+end
+
+def show_successfully_got(file_path)
+	file_path = File.join(file_path, "timestamp.txt")
+
+	timestamp = Time.now.to_i
+	File.write(file_path, timestamp)
 end
 
 
@@ -98,25 +103,41 @@ def build_yt_dlp_cmd(deets)
 	
 	# cmd = "yt-dlp -o '#{vd}' -f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/best' --merge-output-format mkv --remux-video mkv --add-metadata --write-info-json --write-thumbnail --no-config --sponsorblock-remove all --restrict-filename '#{url}'"
 
+	puts """
+*************
+Source details: #{deets['show_name']}
+#{deets}
+*************
+		"""
 
-			
+	if !time_for_getting_show?(deets['fetch_new_every_days'], deets['path'])
+		puts """
+*************
+NOT time for getting! Skipping!
+*************
+			"""
+		return
+	end
 
 	cmd = """
-		yt-dlp
-		-o '#{deets['full_path']}'
-		--download-archive '#{File.join(deets['path'], 'downloaded.txt')}'
-		#{deets['dateafter']}
-		#{deets['options']}
-		-f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4'
-		--merge-output-format mkv --remux-video mkv
-		--add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg
-		--no-config --sponsorblock-remove all --restrict-filename
-		'#{deets['url']}'
-	""".gsub!(/\n/, ' ')
+		yt-dlp \
+		-o '#{deets['full_path']}' \
+		--download-archive '#{File.join(deets['path'], 'downloaded.txt')}' \
+		#{deets['dateafter']} \
+		#{deets['options']} \
+		-f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4' \
+		--format-sort lang:en-us \
+		--merge-output-format mkv --remux-video mkv \
+		--add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg \
+		--no-config --sponsorblock-remove all --restrict-filename \
+		'#{deets['url']}' \
+	"""
+	
 
 	puts cmd
 	system cmd
 
+	show_successfully_got(deets['path'])
 
 	# cmd = [
 	# 	'yt-dlp'
@@ -183,9 +204,7 @@ config['destinations'].each do |d|
 			if show['source_seasoned_by_year']
 				source_details = provider_defaults.merge(show['source_seasoned_by_year'])
 				source_details['show_name'] = show['show_name']
-				puts "#{source_details['show_name']} : #{source_details}"
-				puts source_seasoned_by_year(source_details)
-				puts " "
+				source_seasoned_by_year(source_details)
 			end
 
 			# sources_seasoned_by_name
@@ -194,9 +213,7 @@ config['destinations'].each do |d|
 					source_details = provider_defaults.merge(source)
 					source_details['show_name'] = show['show_name']
 					source_details['season_index'] = format_index_as_season_number(i)
-					puts "#{source_details['show_name']} : #{source_details}"
-					puts sources_seasoned_by_name(source_details)
-					puts " "
+					sources_seasoned_by_name(source_details)
 				end
 			end
 		end
