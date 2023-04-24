@@ -18,12 +18,11 @@ def format_index_as_season_number(index)
 end
 
 def format_dateafter(var)
-	retVal = if var == 'all'
+	if var == 'all'
 		""
 	elsif var.is_a?(Integer)
 		"--dateafter #{(Date.today - var).strftime("%Y%m%d")}"
 	end
-	return retVal
 end
 
 # `delete_old_files('/path/to/folder', 7)` to delete all files in `/path/to/folder` (including subfolders) that are older than 7 days, and any resulting empty subfolders.
@@ -66,17 +65,19 @@ end
 # https://github.com/JordyAlkema/Youtube-DL-Agent.bundle/issues/24
 
 def source_seasoned_by_year(deets)
-	deets['dateafter'] = format_dateafter(deets['daysToGetAndKeep'])
+	deets['dateafter'] = format_dateafter(deets['days_to_get_and_keep'])
 	deets['options'] = "--playlist-reverse"
 	deets['path'] = File.join(deets['location'], deets['show_name'])
 	deets['full_path'] = File.join(deets['path'], "Season %(upload_date>%Y)s", "S%(upload_date>%Y)sE%(playlist_autonumber)s %(title)s.%(ext)s")
-	build_yt_dlp_cmd(deets, path, full_path)
+
+	build_yt_dlp_cmd(deets)
 end
 
 def sources_seasoned_by_name(deets)
-	deets['dateafter'] = format_dateafter(deets['daysToGetAndKeep'])
+	deets['dateafter'] = format_dateafter(deets['days_to_get_and_keep'])
 	deets['path'] = File.join(deets['location'], deets['show_name'], "Season #{deets['season_index']} - #{deets['season_name']}")
 	deets['full_path'] = File.join(deets['path'], "S#{deets['season_index']}E%(playlist_autonumber)s %(title)s.%(ext)s")
+
 	build_yt_dlp_cmd(deets)
 end
 
@@ -167,6 +168,11 @@ config = YAML.load_file('config.yml')
 config['destinations'].each do |d|
 	
 	d['providers'].each do |p|
+		if !File.exist?(d['location'])
+			puts "Path #{d['location']} is unreachable" 
+			return
+		end
+
 		provider_defaults = {}
 		provider_defaults['location'] = d['location']
 		provider_defaults.merge!(find_provider(p['provider_name'], config['providers_config']))
