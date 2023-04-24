@@ -120,17 +120,17 @@ NOT time for getting! Skipping!
 	end
 
 	cmd = """
-		yt-dlp \
-		-o '#{deets['full_path']}' \
-		--download-archive '#{File.join(deets['path'], 'downloaded.txt')}' \
-		#{deets['dateafter']} \
-		#{deets['options']} \
-		-f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4' \
-		--format-sort lang:en-us \
-		--merge-output-format mkv --remux-video mkv \
-		--add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg \
-		--no-config --sponsorblock-remove all --restrict-filename \
-		'#{deets['url']}' \
+yt-dlp \
+-o '#{deets['full_path']}' \
+--download-archive '#{File.join(deets['path'], 'downloaded.txt')}' \
+#{deets['dateafter']} \
+#{deets['options']} \
+-f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4' \
+--format-sort lang:en-us \
+--merge-output-format mkv --remux-video mkv \
+--add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg \
+--no-config --sponsorblock-remove all --restrict-filename \
+'#{deets['url']}' \
 	"""
 	
 
