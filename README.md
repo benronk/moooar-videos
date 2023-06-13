@@ -9,15 +9,15 @@ This is a wrapper around the yt-dlp project. It allows for configuring sources w
 `source_seasoned_by_year`, can only appear once per source. It will save vidoes into a subfolder by year. The source should be a channel url.
 If a channel started posting videos in 2021 it will make multiple folders to save the videos into:
 
-- Season 2012
-- Season 2022
-- Season 2023
+- `Season 2012`
+- `Season 2022`
+- `Season 2023`
 
 `source_seasoned_by_name` can appear multiple times per source. It can occur alone under a source, or it can be accompanied by `source_seasoned_by_year`. It saves videos into subfolders indexed by the order they appear in the config file, with the name appended. This was created so these urls are playlists. If there are 3 entires for seasoned by name, with names `Playlist 1`, `Playlist 2`, `Playlist 3` it will make subfolders:
 
-- Season 01 - Playlist 1
-- Season 02 - Playlist 2
-- Season 03 - Playlist 3
+- `Season 01 - Playlist 1`
+- `Season 02 - Playlist 2`
+- `Season 03 - Playlist 3`
 
 For each provider `days_to_get_and_keep`, `fetch_new_every_days`, `sponsorblock_remove` can be set which operate as defaults for that provider. Each of these can be overwritten by each source.
 
