@@ -119,6 +119,9 @@ NOT time for getting! Skipping!
 		return
 	end
 
+	ytdlp_output_file = File.join('logs', "#{deets['show_name']}_#{Time.now.strftime('%Y%m%d_%H%M%S')}.txt")
+	puts ytdlp_output_file
+
 	cmd = """
 yt-dlp \
 -o '#{deets['full_path']}' \
@@ -131,6 +134,7 @@ yt-dlp \
 --add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg \
 --no-config --sponsorblock-remove all --restrict-filename \
 '#{deets['url']}' \
+| tee '#{ytdlp_output_file}'
 	"""
 	
 
@@ -185,8 +189,9 @@ end
 # GO GO
 # ******
 
-# system('brew upgrade yt-dlp')
+system('brew upgrade yt-dlp')
 
+FileUtils.mkdir_p('logs')
 config = YAML.load_file('config.yml')
 
 # config['playlists'].each do |playlist|
