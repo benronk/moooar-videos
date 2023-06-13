@@ -195,6 +195,7 @@ system('brew upgrade yt-dlp')
 
 FileUtils.mkdir_p('logs')
 config = YAML.load_file('config.yml')
+system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}/start"
 
 # config['playlists'].each do |playlist|
 #   playlist['playlists'].each_with_index do |inner_playlist, index|
@@ -211,7 +212,10 @@ config['destinations'].each do |d|
 	
 	d['providers'].each do |p|
 		if !File.exist?(d['location'])
-			puts "Path #{d['location']} is unreachable" 
+			# puts "Path #{d['location']} is unreachable" 
+			message = "Path #{d['location']} is unreachable" 
+			puts message
+			system "curl -fsS -m 10 --retry 5 --data-raw \"#{message}\" https://hc-ping.com/#{config['healthcheck_uuid']}/fail"
 			return
 		end
 
@@ -239,5 +243,9 @@ config['destinations'].each do |d|
 			end
 		end
 	end
+
+	# system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}"
+	summary = "go.rb finished successfully"
+	system "curl -fsS -m 10 --retry 5 --data-raw \"#{summary}\" https://hc-ping.com/#{config['healthcheck_uuid']}"
 end
 
