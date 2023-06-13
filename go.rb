@@ -72,6 +72,7 @@ end
 def source_seasoned_by_year(deets)
 	deets['dateafter'] = format_dateafter(deets['days_to_get_and_keep'])
 	deets['options'] = "--playlist-reverse"
+	deets['sponsorblock'] = " --sponsorblock-remove all" if deets['sponsorblock_remove']
 	deets['path'] = File.join(deets['location'], deets['show_name'])
 	deets['full_path'] = File.join(deets['path'], "Season %(upload_date>%Y)s", "S%(upload_date>%Y)sE%(playlist_autonumber)s %(title)s.%(ext)s")
 
@@ -80,6 +81,7 @@ end
 
 def sources_seasoned_by_name(deets)
 	deets['dateafter'] = format_dateafter(deets['days_to_get_and_keep'])
+	deets['sponsorblock'] = " --sponsorblock-remove all" if deets['sponsorblock_remove']
 	deets['path'] = File.join(deets['location'], deets['show_name'], "Season #{deets['season_index']} - #{deets['season_name']}")
 	deets['full_path'] = File.join(deets['path'], "S#{deets['season_index']}E%(playlist_autonumber)s %(title)s.%(ext)s")
 
@@ -128,16 +130,16 @@ yt-dlp \
 --download-archive '#{File.join(deets['path'], 'downloaded.txt')}' \
 #{deets['dateafter']} \
 #{deets['options']} \
+#{deets['sponsorblock']} \
 -f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4' \
 --format-sort lang:en-us \
 --merge-output-format mkv --remux-video mkv \
 --add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg \
---no-config --sponsorblock-remove all --restrict-filename \
+--no-config --restrict-filename \
 '#{deets['url']}' \
 | tee '#{ytdlp_output_file}'
 	"""
 	
-
 	puts cmd
 	system cmd
 
