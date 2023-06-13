@@ -139,6 +139,20 @@ yt-dlp \
 
 	show_successfully_got(deets['path'])
 
+	# load ytdlp_output_file, parse and save video id file
+	# so old videos can be ignored
+	input = File.read(ytdlp_output_file)
+	output = input.scan(/\[(\w+)\] Extracting URL: https:\/\/www\.youtube\.com\/watch\?v=(\S+)/).map { |match| "#{match[0]} #{match[1]}" }
+	
+	File.open(File.join('logs', "#{deets['show_name']}_video_ids_#{Time.now.strftime('%Y%m%d_%H%M%S')}.txt"), 'w') do |file|
+	  file.puts(output) if !output.empty?
+	end
+
+
+
+
+
+
 	# cmd = [
 	# 	'yt-dlp'
 	# 	,"-o '#{vd}'"
