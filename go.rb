@@ -14,6 +14,7 @@ require 'yaml'
 RUNTIME = (Time.now - 60).to_i
 $summary = {downloaded_count: 0, downloaded: [], skipped_count: 0, skipped: []}
 
+# This turns 1 into 01 just for prettiness
 def format_index_as_season_number(index)
 	index += 1
   index.to_s.rjust(2, '0')
