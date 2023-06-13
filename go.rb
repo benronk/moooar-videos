@@ -181,15 +181,13 @@ end
 # GO GO
 # ******
 
-system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}/start"
-
 begin
+	config = YAML.load_file('config.yml')
+	system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}/start"
 
 	system "brew upgrade yt-dlp"
 
 	FileUtils.mkdir_p('logs')
-	config = YAML.load_file('config.yml')
-
 
 	# loop over destinations
 	# loop over providers
