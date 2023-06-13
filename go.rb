@@ -11,6 +11,7 @@ require 'securerandom'
 require 'shellwords'
 require 'yaml'
 
+RUNTIME = (Time.now - 60).to_i
 
 def format_index_as_season_number(index)
 	index += 1
@@ -49,8 +50,7 @@ def time_for_getting_show?(days, file_path)
 		return true
 	else 
 		timestamp = File.read(file_path).to_i
-		current_time = Time.now.to_i
-		if current_time >= timestamp + (days * 86400)
+		if RUNTIME >= timestamp + (days * 86400)
 	    return true
 	  else 
 	  	return false
@@ -61,8 +61,7 @@ end
 def show_successfully_got(file_path)
 	file_path = File.join(file_path, "timestamp.txt")
 
-	timestamp = Time.now.to_i
-	File.write(file_path, timestamp)
+	File.write(file_path, RUNTIME)
 end
 
 
@@ -187,6 +186,7 @@ system('brew upgrade yt-dlp')
 FileUtils.mkdir_p('logs')
 config = YAML.load_file('config.yml')
 system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}/start"
+
 
 # loop over destinations
 # loop over providers
