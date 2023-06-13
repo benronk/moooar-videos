@@ -6,6 +6,8 @@ This is a wrapper around the yt-dlp project. It allows for configuring sources w
 
 `brew install yt-dlp`
 
+Sign up for a free account at https://healthchecks.io, setup a project and input the projects uuid into the config file as `healthcheck_uuid`
+
 ## Configuration
 
 `example-config.yml` should be renamed to `config.yml` and setup with your sources, and how you'd like them stored/saved.
