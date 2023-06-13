@@ -2,6 +2,10 @@
 
 This is a wrapper around the yt-dlp project. It allows for configuring sources with a config file, how far back to fetch videos, and whether to remove old videos.
 
+## Installation
+
+`brew install yt-dlp`
+
 ## Configuration
 
 `example-config.yml` should be renamed to `config.yml` and setup with your sources, and how you'd like them stored/saved.

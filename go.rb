@@ -181,52 +181,61 @@ end
 # GO GO
 # ******
 
-system('brew upgrade yt-dlp')
-
-FileUtils.mkdir_p('logs')
-config = YAML.load_file('config.yml')
 system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}/start"
 
+begin
 
-# loop over destinations
-# loop over providers
-config['destinations'].each do |d|
-	
-	d['providers'].each do |p|
-		if !File.exist?(d['location'])
-			message = "Path #{d['location']} is unreachable" 
-			puts message
-			system "curl -fsS -m 10 --retry 5 --data-raw \"#{message}\" https://hc-ping.com/#{config['healthcheck_uuid']}/fail"
-			return
-		end
+	system "brew upgrade yt-dlp"
 
-		provider_defaults = {}
-		provider_defaults['location'] = d['location']
-		provider_defaults.merge!(find_provider(p['provider_name'], config['providers_config']))
-		puts "#{p['provider_name']} defaults: #{provider_defaults}"
+	FileUtils.mkdir_p('logs')
+	config = YAML.load_file('config.yml')
 
-		p['shows'].each do |show|
-			# source_seasoned_by_year
-			if show['source_seasoned_by_year']
-				source_details = provider_defaults.merge(show['source_seasoned_by_year'])
-				source_details['show_name'] = show['show_name']
-				source_seasoned_by_year(source_details)
+
+	# loop over destinations
+	# loop over providers
+	config['destinations'].each do |d|
+		
+		d['providers'].each do |p|
+			if !File.exist?(d['location'])
+				message = "Path #{d['location']} is unreachable" 
+				puts message
+				system "curl -fsS -m 10 --retry 5 --data-raw \"#{message}\" https://hc-ping.com/#{config['healthcheck_uuid']}/fail"
+				return
 			end
 
-			# sources_seasoned_by_name
-			if show['sources_seasoned_by_name']
-				show['sources_seasoned_by_name'].each_with_index do |source, i|
-					source_details = provider_defaults.merge(source)
+			provider_defaults = {}
+			provider_defaults['location'] = d['location']
+			provider_defaults.merge!(find_provider(p['provider_name'], config['providers_config']))
+			puts "#{p['provider_name']} defaults: #{provider_defaults}"
+
+			p['shows'].each do |show|
+				# source_seasoned_by_year
+				if show['source_seasoned_by_year']
+					source_details = provider_defaults.merge(show['source_seasoned_by_year'])
 					source_details['show_name'] = show['show_name']
-					source_details['season_index'] = format_index_as_season_number(i)
-					sources_seasoned_by_name(source_details)
+					source_seasoned_by_year(source_details)
+				end
+
+				# sources_seasoned_by_name
+				if show['sources_seasoned_by_name']
+					show['sources_seasoned_by_name'].each_with_index do |source, i|
+						source_details = provider_defaults.merge(source)
+						source_details['show_name'] = show['show_name']
+						source_details['season_index'] = format_index_as_season_number(i)
+						sources_seasoned_by_name(source_details)
+					end
 				end
 			end
 		end
-	end
 
-	# system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}"
-	summary = "go.rb finished successfully"
-	system "curl -fsS -m 10 --retry 5 --data-raw \"#{summary}\" https://hc-ping.com/#{config['healthcheck_uuid']}"
+		# system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}"
+		summary = "go.rb finished successfully"
+		system "curl -fsS -m 10 --retry 5 --data-raw \"#{summary}\" https://hc-ping.com/#{config['healthcheck_uuid']}"
+
+	rescue => e
+		message = "An error occurred: #{e.message}" 
+		puts message
+		system "curl -fsS -m 10 --retry 5 --data-raw \"#{message}\" https://hc-ping.com/#{config['healthcheck_uuid']}/fail"
+	end
 end
 
