@@ -12,7 +12,25 @@ require 'shellwords'
 require 'yaml'
 
 RUNTIME = (Time.now - 60).to_i
+
+$dev_mode = false
+$healthcheck_uuid
 $summary = {downloaded_count: 0, downloaded: [], skipped_count: 0, skipped: []}
+
+# val: start, end, fail
+def healthcheck(var, msg = '')
+	case var
+	when 'start'
+		system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{$healthcheck_uuid}/start" unless $dev_mode
+	when 'end'
+		puts msg
+		system "curl -fsS -m 10 --retry 5 --data-raw \"#{msg}\" https://hc-ping.com/#{$healthcheck_uuid}" unless $dev_mode
+	when 'fail'
+		puts msg
+		system "curl -fsS -m 10 --retry 5 --data-raw \"#{msg}\" https://hc-ping.com/#{$healthcheck_uuid}/fail" unless $dev_mode
+	else
+	end
+end
 
 def format_index_as_season_number(index)
 	index += 1
@@ -45,6 +63,7 @@ end
 # check_time(7, "/path/to/timestamp.txt")
 
 def time_for_getting_show?(days, file_path)
+	return true if $dev_mode
 	file_path = File.join(file_path, "timestamp.txt")
 
 	if !File.exist?(file_path)
@@ -137,6 +156,9 @@ yt-dlp \
 	"""
 	
 	puts cmd
+
+	return if $dev_mode
+
 	system cmd
 
 	show_successfully_got(deets['path'])
@@ -185,9 +207,14 @@ end
 
 begin
 	config = YAML.load_file('config.yml')
-	system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}/start"
+	
+	$healthcheck_uuid = config['healthcheck_uuid']
+	$dev_mode = config['dev_mode']
+	puts "dev mode ON!" if $dev_mode
 
-	system "brew upgrade yt-dlp"
+	healthcheck('start')
+
+	system "brew upgrade yt-dlp" unless $dev_mode
 
 	FileUtils.mkdir_p('logs')
 
@@ -197,9 +224,8 @@ begin
 		
 		d['providers'].each do |p|
 			if !File.exist?(d['location'])
-				message = "Path #{d['location']} is unreachable" 
-				puts message
-				system "curl -fsS -m 10 --retry 5 --data-raw \"#{message}\" https://hc-ping.com/#{config['healthcheck_uuid']}/fail"
+				message = "Path #{d['location']} is unreachable"
+				healthcheck('fail', message)
 				return
 			end
 
@@ -238,13 +264,11 @@ Skipped sources: #{$summary[:skipped_count]}
 		
 		# system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}"
 		# summary = "go.rb finished successfully"
-		puts summary
-		system "curl -fsS -m 10 --retry 5 --data-raw \"#{summary}\" https://hc-ping.com/#{config['healthcheck_uuid']}"
+		healthcheck('end', summary)		
 
 	rescue => e
-		message = "An error occurred: #{e.message}" 
-		puts message
-		system "curl -fsS -m 10 --retry 5 --data-raw \"#{message}\" https://hc-ping.com/#{config['healthcheck_uuid']}/fail"
+		message = "An error occurred: #{e.message}"
+		healthcheck(fail, message)
 	end
 end
 
