@@ -88,15 +88,6 @@ def sources_seasoned_by_name(deets)
 	build_yt_dlp_cmd(deets)
 end
 
-# Relies on playlist_index. Youtube should support.
-# def playlists_under_source(location, channel_name, playlist_name, season_no)
-# 	path = File.join(location, "#{channel_name} [%(channel_id)s]", "Season #{season_no} #{playlist_name}", "S#{season_no}E%(playlist_index)s %(title)s [%(id)s].%(ext)s")
-
-# 	puts path
-
-# 	return path
-# end
-
 def build_yt_dlp_cmd(deets)
 
 	# youtube-dl working cmd line
@@ -196,15 +187,6 @@ system('brew upgrade yt-dlp')
 FileUtils.mkdir_p('logs')
 config = YAML.load_file('config.yml')
 system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}/start"
-
-# config['playlists'].each do |playlist|
-#   playlist['playlists'].each_with_index do |inner_playlist, index|
-#     index += 1
-#     index_str = index.to_s.rjust(2, '0')
-
-#     playlists_under_source(playlist['name'], inner_playlist['name'], index_str)
-#   end
-# end
 
 # loop over destinations
 # loop over providers
