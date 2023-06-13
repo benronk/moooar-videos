@@ -1,0 +1,37 @@
+healthcheck_uuid: 'uuid'
+providers_config: 
+  - provider_name: 'youtube'
+    days_to_get_and_keep: 60
+    fetch_new_every_days: 6
+    sponsorblock_remove: false
+destinations: 
+  - location: '/Volumes/storage/videos/youtube'
+    providers: 
+      - provider_name: 'youtube'
+        shows: 
+          - show_name: 'Larson Farms'
+            source_seasoned_by_year:
+              url: 'https://www.youtube.com/@LarsonFarms/videos'
+              fetch_new_every_days: 1
+          - show_name: 'Millenial Farmer'
+            source_seasoned_by_year:
+              url: 'https://www.youtube.com/@MillennialFarmer/videos'
+              fetch_new_every_days: 1
+          - show_name: 'Outdoor Boys'
+            source_seasoned_by_year:
+              url: 'https://www.youtube.com/@OutdoorBoys/videos'
+            sources_seasoned_by_name:
+              - url: 'https://www.youtube.com/watch?v=138djJZRkdY&list=PL5EGD6MqjI6JK4QkRGnM6yRlCC9ZNp3BX'
+                season_name: 'Nerf Wars'
+                days_to_get_and_keep: 'all'
+                fetch_new_every_days: 25
+              - url: 'https://www.youtube.com/playlist?list=PL5EGD6MqjI6IZorbsisodOyfY9qg9jV_y'
+                season_name: 'Knot Videos'
+                days_to_get_and_keep: 'all'
+                fetch_new_every_days: 25
+          - show_name: 'Zisteau'
+            sources_seasoned_by_name:
+              - url: 'https://www.youtube.com/playlist?list=PLVPJ1jbg0CaFzYF6jJyUIJYXYpCE4UIr3'
+                season_name: 'Factorio Meiosis'
+                days_to_get_and_keep: 'all'
+

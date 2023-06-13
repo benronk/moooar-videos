@@ -212,7 +212,6 @@ config['destinations'].each do |d|
 	
 	d['providers'].each do |p|
 		if !File.exist?(d['location'])
-			# puts "Path #{d['location']} is unreachable" 
 			message = "Path #{d['location']} is unreachable" 
 			puts message
 			system "curl -fsS -m 10 --retry 5 --data-raw \"#{message}\" https://hc-ping.com/#{config['healthcheck_uuid']}/fail"
