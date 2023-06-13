@@ -12,6 +12,7 @@ require 'shellwords'
 require 'yaml'
 
 RUNTIME = (Time.now - 60).to_i
+$summary = {downloaded_count: 0, downloaded: [], skipped_count: 0, skipped: []}
 
 def format_index_as_season_number(index)
 	index += 1
@@ -95,19 +96,24 @@ def build_yt_dlp_cmd(deets)
 	
 	# cmd = "yt-dlp -o '#{vd}' -f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/best' --merge-output-format mkv --remux-video mkv --add-metadata --write-info-json --write-thumbnail --no-config --sponsorblock-remove all --restrict-filename '#{url}'"
 
-	puts """
-*************
-Source details: #{deets['show_name']}
-#{deets}
-*************
-		"""
+# 	puts """
+# *************
+# Source details: #{deets['show_name']}
+# #{deets}
+# *************
+# 		"""
 
-	if !time_for_getting_show?(deets['fetch_new_every_days'], deets['path'])
-		puts """
-*************
-NOT time for getting! Skipping!
-*************
-			"""
+	if time_for_getting_show?(deets['fetch_new_every_days'], deets['path'])
+		$summary[:downloaded_count] += 1
+		$summary[:downloaded] << "#{deets['show_name']} #{deets['season_name']}"
+	else
+# 		puts """
+# *************
+# NOT time for getting! Skipping!
+# *************
+# 			"""
+		$summary[:skipped_count] += 1
+		$summary[:skipped] << "#{deets['show_name']} #{deets['season_name']}"
 		return
 	end
 
@@ -143,10 +149,6 @@ yt-dlp \
 	File.open(File.join('logs', "#{deets['show_name']}_video_ids_#{Time.now.strftime('%Y%m%d_%H%M%S')}.txt"), 'w') do |file|
 	  file.puts(output) if !output.empty?
 	end
-
-
-
-
 
 
 	# cmd = [
@@ -226,8 +228,17 @@ begin
 			end
 		end
 
+		# skipped_formatted
+		summary = """
+Downloaded sources: #{$summary[:downloaded_count]}
+#{$summary[:downloaded].map { |item| "- #{item}" }.join("\n")}
+Skipped sources: #{$summary[:skipped_count]}
+#{$summary[:skipped].map { |item| "- #{item}" }.join("\n")}
+		"""
+		
 		# system "curl -fsS -m 10 --retry 5 https://hc-ping.com/#{config['healthcheck_uuid']}"
-		summary = "go.rb finished successfully"
+		# summary = "go.rb finished successfully"
+		puts summary
 		system "curl -fsS -m 10 --retry 5 --data-raw \"#{summary}\" https://hc-ping.com/#{config['healthcheck_uuid']}"
 
 	rescue => e
