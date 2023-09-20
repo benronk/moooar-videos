@@ -15,7 +15,7 @@ RUNTIME = (Time.now - 60).to_i
 
 $dev_mode = false
 $healthcheck_uuid
-$summary = {downloaded_count: 0, downloaded: [], skipped_count: 0, skipped: []}
+$summary
 
 # val: start, end, fail
 def healthcheck(var, msg = '')
@@ -43,6 +43,10 @@ def format_dateafter(var)
 	elsif var.is_a?(Integer)
 		"--dateafter #{(Date.today - var).strftime("%Y%m%d")}"
 	end
+end
+
+def format_sponsorblock(var)
+	" --sponsorblock-remove all" if var
 end
 
 # `delete_old_files('/path/to/folder', 7)` to delete all files in `/path/to/folder` (including subfolders) that are older than 7 days, and any resulting empty subfolders.
@@ -78,12 +82,69 @@ def time_for_getting_show?(days, file_path)
   end
 end
 
-def show_successfully_got(file_path)
+def show_got(file_path)
 	file_path = File.join(file_path, "timestamp.txt")
 
 	File.write(file_path, RUNTIME)
 end
 
+def run_ytdlp_cmd(deets, url, outputfile)
+	cmd = """
+yt-dlp \
+#{deets['user_and_password']} \
+-o '#{deets['full_path']}' \
+--download-archive '#{File.join(deets['path'], 'downloaded.txt')}' \
+#{deets['dateafter']} \
+#{deets['options']} \
+#{deets['sponsorblock']} \
+-f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4' \
+--format-sort lang:en-us \
+--merge-output-format mkv --remux-video mkv \
+--add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg \
+--no-config --restrict-filename --cookies-from-browser chrome \
+'#{url}' \
+| tee '#{outputfile}'
+	"""
+	
+	puts cmd
+	system cmd unless $dev_mode
+end
+
+
+
+# --cookies-from-browser chrome
+
+# Download Udemy course keeping each chapter in separate directory under MyVideos directory in your home
+# $ yt-dlp -u user -p password -P "~/MyVideos" -o "%(playlist)s/%(chapter_number)s - %(chapter)s/%(title)s.%(ext)s" "https://www.udemy.com/java-tutorial"
+
+# Download entire series season keeping each series and each season in separate directory under C:/MyVideos
+# $ yt-dlp -P "C:/MyVideos" -o "%(series)s/%(season_number)s - %(season)s/%(episode_number)s - %(episode)s.%(ext)s" "https://videomore.ru/kino_v_detalayah/5_sezon/367617"
+
+
+
+# Available for the video that belongs to some logical chapter or section:
+
+# chapter (string): Name or title of the chapter the video belongs to
+# chapter_number (numeric): Number of the chapter the video belongs to
+# chapter_id (string): Id of the chapter the video belongs to
+# Available for the video that is an episode of some series or programme:
+
+# series (string): Title of the series or programme the video episode belongs to
+# season (string): Title of the season the video episode belongs to
+# season_number (numeric): Number of the season the video episode belongs to
+# season_id (string): Id of the season the video episode belongs to
+# episode (string): Title of the video episode
+# episode_number (numeric): Number of the video episode within a season
+# episode_id (string): Id of the video episode
+
+def source_seasoned_by_season(deets)
+	# deets['user_and_password'] = "-u #{deets['user']} -p #{deets['password']}"
+	deets['sponsorblock'] = format_sponsorblock(deets['sponsorblock_remove'])
+	deets['path'] = File.join(deets['location'], deets['show_name'])
+	deets['full_path'] = File.join(deets['path'], "Season %(season_number)s", "%(series)s S%(season_number)sE%(episode_number)s %(title)s.%(ext)s")
+
+	yt_dlp(deets)
+end
 
 # This video path could work for a channel:
 # https://github.com/JordyAlkema/Youtube-DL-Agent.bundle/issues/24
@@ -91,23 +152,23 @@ end
 def source_seasoned_by_year(deets)
 	deets['dateafter'] = format_dateafter(deets['days_to_get_and_keep'])
 	deets['options'] = "--playlist-reverse"
-	deets['sponsorblock'] = " --sponsorblock-remove all" if deets['sponsorblock_remove']
+	deets['sponsorblock'] = format_sponsorblock(deets['sponsorblock_remove'])
 	deets['path'] = File.join(deets['location'], deets['show_name'])
 	deets['full_path'] = File.join(deets['path'], "Season %(upload_date>%Y)s", "S%(upload_date>%Y)sE%(playlist_autonumber)s %(title)s.%(ext)s")
 
-	build_yt_dlp_cmd(deets)
+	yt_dlp(deets)
 end
 
 def sources_seasoned_by_name(deets)
 	deets['dateafter'] = format_dateafter(deets['days_to_get_and_keep'])
-	deets['sponsorblock'] = " --sponsorblock-remove all" if deets['sponsorblock_remove']
+	deets['sponsorblock'] = format_sponsorblock(deets['sponsorblock_remove'])
 	deets['path'] = File.join(deets['location'], deets['show_name'], "Season #{deets['season_index']} - #{deets['season_name']}")
 	deets['full_path'] = File.join(deets['path'], "S#{deets['season_index']}E%(playlist_autonumber)s %(title)s.%(ext)s")
 
-	build_yt_dlp_cmd(deets)
+	yt_dlp(deets)
 end
 
-def build_yt_dlp_cmd(deets)
+def yt_dlp(deets)
 
 	# youtube-dl working cmd line
 	# cmd = "youtube-dl -o '#{vd}' -f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/best' -i --verbose --download-archive downloaded.txt --merge-output-format mkv --add-metadata --embed-thumbnail '#{url}'"
@@ -126,11 +187,6 @@ def build_yt_dlp_cmd(deets)
 		$summary[:downloaded_count] += 1
 		$summary[:downloaded] << "#{deets['show_name']} #{deets['season_name']}"
 	else
-# 		puts """
-# *************
-# NOT time for getting! Skipping!
-# *************
-# 			"""
 		$summary[:skipped_count] += 1
 		$summary[:skipped] << "#{deets['show_name']} #{deets['season_name']}"
 		return
@@ -139,37 +195,27 @@ def build_yt_dlp_cmd(deets)
 	ytdlp_output_file = File.join('logs', "#{deets['show_name']}_#{Time.now.strftime('%Y%m%d_%H%M%S')}.txt")
 	puts ytdlp_output_file
 
-	cmd = """
-yt-dlp \
--o '#{deets['full_path']}' \
---download-archive '#{File.join(deets['path'], 'downloaded.txt')}' \
-#{deets['dateafter']} \
-#{deets['options']} \
-#{deets['sponsorblock']} \
--f 'bestvideo[ext=mp4][height<=?720]+bestaudio[ext=m4a]/best[ext=mp4][height<=?720]/mp4' \
---format-sort lang:en-us \
---merge-output-format mkv --remux-video mkv \
---add-metadata --write-info-json --write-thumbnail --convert-thumbnails jpg \
---no-config --restrict-filename \
-'#{deets['url']}' \
-| tee '#{ytdlp_output_file}'
-	"""
+	if deets['urls']
+		deets['urls'].each do |url|
+			run_ytdlp_cmd(deets, url, ytdlp_output_file)
+		end
+	else
+		run_ytdlp_cmd(deets, deets['url'], ytdlp_output_file)
+	end 
 	
-	puts cmd
-
 	return if $dev_mode
 
-	system cmd
-
-	show_successfully_got(deets['path'])
+	show_got(deets['path'])
 
 	# load ytdlp_output_file, parse and save video id file
 	# so old videos can be ignored
-	input = File.read(ytdlp_output_file)
-	output = input.scan(/\[(\w+)\] Extracting URL: https:\/\/www\.youtube\.com\/watch\?v=(\S+)/).map { |match| "#{match[0]} #{match[1]}" }
-	
-	File.open(File.join('logs', "#{deets['show_name']}_video_ids_#{Time.now.strftime('%Y%m%d_%H%M%S')}.txt"), 'w') do |file|
-	  file.puts(output) if !output.empty?
+	if (deets['provider_name'] == 'youtube')
+		input = File.read(ytdlp_output_file)
+		output = input.scan(/\[(\w+)\] Extracting URL: https:\/\/www\.youtube\.com\/watch\?v=(\S+)/).map { |match| "#{match[0]} #{match[1]}" }
+		
+		File.open(File.join('logs', "#{deets['show_name']}_video_ids_#{Time.now.strftime('%Y%m%d_%H%M%S')}.txt"), 'w') do |file|
+		  file.puts(output) if !output.empty?
+		end
 	end
 
 
@@ -229,6 +275,8 @@ begin
 				return
 			end
 
+			$summary = {downloaded_count: 0, downloaded: [], skipped_count: 0, skipped: []}
+
 			provider_defaults = {}
 			provider_defaults['location'] = d['location']
 			provider_defaults.merge!(find_provider(p['provider_name'], config['providers_config']))
@@ -250,6 +298,13 @@ begin
 						source_details['season_index'] = format_index_as_season_number(i)
 						sources_seasoned_by_name(source_details)
 					end
+				end
+
+				# source_seasoned_by_season
+				if show['source_seasoned_by_season']
+					source_details = provider_defaults.merge(show['source_seasoned_by_season'])
+					source_details['show_name'] = show['show_name']
+					source_seasoned_by_season(source_details)
 				end
 			end
 		end
