@@ -1,0 +1,12 @@
+source 'https://rubygems.org'
+
+gem 'date'
+gem 'filesize'
+gem 'fileutils'
+gem 'json'
+gem 'logger'
+gem 'pp'
+gem 'pry'
+gem 'securerandom'
+gem 'shellwords'
+gem 'yaml'
